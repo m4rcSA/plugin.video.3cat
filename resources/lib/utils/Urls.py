@@ -10,6 +10,7 @@ url_mesvist = 'http://www.ccma.cat/tv3/alacarta/mes-vist/'
 
 url_api_videos = 'https://api.3cat.cat/videos?version=2.0&_format=json&programatv_id={}&pagina={}&items_pagina={}&origen=auto&idioma=PU_CATALA&perfil=pc&tipus_contingut=PPD'
 url_api_videos_temporada = 'https://api.3cat.cat/videos?version=2.0&_format=json&programatv_id={}&pagina={}&items_pagina={}&ordre=capitol&origen=llistat&idioma=PU_CATALA&perfil=pc&tipus_contingut=PPD&temporada=PUTEMP_{}'
+url_api_pellicules_novetats = 'https://api.3cat.cat/videos?_format=json&frontal=pucollecio-pucolvid-dty_colleccio17610&origen=frontal&items_pagina={}&pagina={}&sdom=img&version=2.0&cache=90&https=true&master=yes'
 
 url_directe_tv3 = 'https://directes3-tv-cat.3catdirectes.cat/live-content/tv3-hls/master.m3u8'
 url_directe_324 = 'https://directes-tv-int.3catdirectes.cat/live-content/canal324-hls/master.m3u8'
