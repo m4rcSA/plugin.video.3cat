@@ -112,21 +112,19 @@ class TV3cat:
     def getMovies(self, section):
         xbmc.log("plugin.video.3cat - get movies " + str(section))
 
-        # Les novetats són una col·lecció servida directament per l'API de vídeos.
-        # Carreguem només la primera pàgina i fem servir la mida configurada.
-        if section == 'novetats':
-            api_url = (
-                "https://api.3cat.cat/videos?"
-                "_format=json&frontal=pucollecio-pucolvid-dty_colleccio17610"
-                "&origen=frontal&items_pagina={}&pagina=1"
-                "&sdom=img&version=2.0&cache=90&https=true&master=yes"
-            ).format(self.items_pagina)
+        # Novetats: fem servir l'API de la col·lecció i la mateixa paginació
+        # que els capítols. La mida de pàgina és la configurada a self.items_pagina.
+        if section == 'novetats' or section.startswith('novetats_'):
+            url_parts = section.split('_')
+            pagina = int(url_parts[1]) if len(url_parts) > 1 else 1
+            api_url = Urls.url_api_pellicules_novetats.format(self.items_pagina, pagina)
 
             try:
                 with urllib.request.urlopen(api_url) as response:
                     json_data = json.loads(response.read())
                 resposta = json_data.get('resposta', {})
                 items = resposta.get('items', {}).get('item', [])
+                paginacio = resposta.get('paginacio', {})
 
                 if isinstance(items, dict):
                     items = [items]
@@ -148,11 +146,23 @@ class TV3cat:
                     videos.append(Video(title, image or '', image or '', description,
                                         video_id, item.get('durada') or ''))
 
-                xbmc.log("plugin.video.3cat - novetats: pagina 1, items_pagina " +
-                         str(self.items_pagina) + ", elements " + str(len(videos)))
+                xbmc.log("plugin.video.3cat - novetats: pagina " + str(pagina) +
+                         "/" + str(paginacio.get('total_pagines', pagina)) +
+                         ", items_pagina " + str(self.items_pagina) +
+                         ", elements " + str(len(videos)))
+
+                if pagina < int(paginacio.get('total_pagines', pagina)):
+                    pagina_seguent = pagina + 1
+                    videos.append(FolderVideo(
+                        f"{self.strs.get('seguent')}: {pagina_seguent}",
+                        "novetats_" + str(pagina_seguent),
+                        'pellicules_categoria', '', ''
+                    ))
+
                 return videos
             except Exception as error:
-                xbmc.log("plugin.video.3cat - error carregant novetats: " + str(error), xbmc.LOGERROR)
+                xbmc.log("plugin.video.3cat - error carregant novetats pagina " +
+                         str(pagina) + ": " + str(error), xbmc.LOGERROR)
                 return []
 
         if section == 'cataleg':
