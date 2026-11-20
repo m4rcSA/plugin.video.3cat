@@ -111,9 +111,60 @@ class TV3cat:
 
     def getMovies(self, section):
         xbmc.log("plugin.video.3cat - get movies " + str(section))
+
+        # Les novetats són una col·lecció servida directament per l'API de vídeos.
+        # El frontal identifica la col·lecció 17610; no hi ha cap filtre
+        # coleccio_id. Carreguem totes les pàgines en una sola llista Kodi.
         if section == 'novetats':
-            page_url = Urls.url_pellicules_novetats
-        elif section == 'cataleg':
+            api_url = (
+                "https://api.3cat.cat/videos?"
+                "_format=json&frontal=pucollecio-pucolvid-dty_colleccio17610"
+                "&origen=frontal&items_pagina=18&pagina={}"
+                "&sdom=img&version=2.0&cache=90&https=true&master=yes"
+            )
+            videos = []
+            seen = set()
+            pagina = 1
+            total_pagines = 1
+
+            while pagina <= total_pagines:
+                try:
+                    with urllib.request.urlopen(api_url.format(pagina)) as response:
+                        json_data = json.loads(response.read())
+                    resposta = json_data.get('resposta', {})
+                    items = resposta.get('items', {}).get('item', [])
+                    paginacio = resposta.get('paginacio', {})
+                    total_pagines = int(paginacio.get('total_pagines', pagina))
+
+                    if isinstance(items, dict):
+                        items = [items]
+                    if not isinstance(items, list):
+                        items = []
+
+                    for item in items:
+                        video_id = item.get('id')
+                        title = item.get('titol') or item.get('title')
+                        if not title or video_id in (None, '') or str(video_id) in seen:
+                            continue
+                        seen.add(str(video_id))
+                        image = self.extractImageIfAvailable(item, 'IMG_POSTER')
+                        if not image:
+                            image = self.extractImageIfAvailable(item, 'KEYVIDEO')
+                        description = item.get('entradeta') or item.get('descripcio') or item.get('sinopsi') or ''
+                        videos.append(Video(title, image or '', image or '', description,
+                                            video_id, item.get('durada') or ''))
+
+                    xbmc.log("plugin.video.3cat - novetats: pagina " + str(pagina) +
+                             "/" + str(total_pagines) + ", elements " + str(len(items)))
+                    pagina += 1
+                except Exception as error:
+                    xbmc.log("plugin.video.3cat - error carregant novetats pagina " +
+                             str(pagina) + ": " + str(error), xbmc.LOGERROR)
+                    break
+
+            return videos
+
+        if section == 'cataleg':
             page_url = Urls.url_pellicules_cataleg
         else:
             page_url = section
